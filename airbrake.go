@@ -48,7 +48,7 @@ func (hook *airbrakeHook) Fire(entry *logrus.Entry) error {
 }
 
 func (hook *airbrakeHook) sendNotice(notice *gobrake.Notice) {
-	if _, err := hook.Airbrake.SendNotice(notice); err != nil {
+	if _, err := hook.Airbrake.SendNoticeAsync(notice); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to send error to Airbrake: %v\n", err)
 	}
 }
