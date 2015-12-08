@@ -3,8 +3,6 @@ package airbrake
 import (
 	"errors"
 	"fmt"
-	"os"
-
 	"github.com/Invoiced/logrus"
 	"gopkg.in/airbrake/gobrake.v2"
 )
@@ -48,9 +46,7 @@ func (hook *airbrakeHook) Fire(entry *logrus.Entry) error {
 }
 
 func (hook *airbrakeHook) sendNotice(notice *gobrake.Notice) {
-	if _, err := hook.Airbrake.SendNoticeAsync(notice); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to send error to Airbrake: %v\n", err)
-	}
+	hook.Airbrake.SendNoticeAsync(notice)
 }
 
 func (hook *airbrakeHook) Levels() []logrus.Level {
