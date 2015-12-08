@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/Invoiced/logrus"
 	"gopkg.in/airbrake/gobrake.v2"
 )
 

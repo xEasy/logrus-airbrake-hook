@@ -1,11 +1,11 @@
-package airbrake // import "gopkg.in/gemnasium/logrus-airbrake-hook.v2"
+package airbrake
 
 import (
 	"errors"
 	"fmt"
 	"os"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/Invoiced/logrus"
 	"gopkg.in/airbrake/gobrake.v2"
 )
 
