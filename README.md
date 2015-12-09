@@ -13,21 +13,20 @@ The hook must be configured with:
 * A project ID (found in your your Airbrake project settings)
 * An API key ID (found in your your Airbrake project settings)
 * The name of the current environment ("development", "staging", "production", ...)
+* The Stack Level Trace You Want to Begin With
+* If you want Airbrake to fire synchronous or not
 
 ```go
 import (
     "log/syslog"
-    "github.com/Sirupsen/logrus"
-    "gopkg.in/gemnasium/logrus-airbrake-hook.v2" // the package is named "aibrake"
+    "github.com/Invoiced/logrus"
+    "github.com/Invoiced/logrus-airbrake-hook" // the package is named 
     )
 
 func main() {
-    log := logrus.New()
-    log.AddHook(airbrake.NewHook(123, "xyz", "production"))
+    log.AddHook(airbrake.NewHook(123, "xyz", "production",3,true))
     log.Error("some logging message") // The error is sent to airbrake in background
 }
 ```
-
-Note that if environment == "development", the hook will not send anything to airbrake.
 
 
