@@ -1,10 +1,9 @@
-package airbrake // import "gopkg.in/gemnasium/logrus-airbrake-hook.v2"
+package airbrake
 
 import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/Sirupsen/logrus"
 	"gopkg.in/airbrake/gobrake.v2"
@@ -13,10 +12,20 @@ import (
 // AirbrakeHook to send exceptions to an exception-tracking service compatible
 // with the Airbrake API.
 type airbrakeHook struct {
-	Airbrake *gobrake.Notifier
+	Airbrake        *gobrake.Notifier
+	StackTraceLevel int
+	Synchronous     bool
 }
 
-func NewHook(projectID int64, apiKey, env string) *airbrakeHook {
+type Error struct {
+	msg string
+}
+
+func (e Error) Error() string {
+	return e.msg
+}
+
+func NewHook(projectID int64, apiKey, env string, stackTraceLevel int, synchronous bool) *airbrakeHook {
 	airbrake := gobrake.NewNotifier(projectID, apiKey)
 	airbrake.AddFilter(func(notice *gobrake.Notice) *gobrake.Notice {
 		if env == "development" {
@@ -26,7 +35,9 @@ func NewHook(projectID int64, apiKey, env string) *airbrakeHook {
 		return notice
 	})
 	hook := &airbrakeHook{
-		Airbrake: airbrake,
+		airbrake,
+		stackTraceLevel,
+		synchronous,
 	}
 	return hook
 }
@@ -47,17 +58,18 @@ func (hook *airbrakeHook) Fire(entry *logrus.Entry) error {
 			break
 		}
 	}
-	notice := hook.Airbrake.Notice(notifyErr, req, 3)
+	notice := hook.Airbrake.Notice(notifyErr, req, hook.StackTraceLevel)
 	for k, v := range entry.Data {
 		notice.Context[k] = fmt.Sprintf("%s", v)
 	}
 
-	hook.sendNotice(notice)
-	return nil
-}
-
-func (hook *airbrakeHook) sendNotice(notice *gobrake.Notice) {
 	hook.Airbrake.SendNoticeAsync(notice)
+
+	if hook.Synchronous {
+		hook.Airbrake.Flush()
+	}
+
+	return nil
 }
 
 func (hook *airbrakeHook) Levels() []logrus.Level {

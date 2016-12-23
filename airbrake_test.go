@@ -3,28 +3,21 @@ package airbrake
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"github.com/Invoiced/logrus"
+	"gopkg.in/airbrake/gobrake.v2"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
-
-	"github.com/Sirupsen/logrus"
-	"gopkg.in/airbrake/gobrake.v2"
 )
-
-type customErr struct {
-	msg string
-}
-
-func (e *customErr) Error() string {
-	return e.msg
-}
 
 const (
 	testAPIKey    = "abcxyz"
 	testEnv       = "development"
-	expectedClass = "*airbrake.customErr"
-	expectedMsg   = "foo"
+	expectedClass = "airbrake.Error"
+	expectedMsg   = "foo bar"
 	unintendedMsg = "Airbrake will not see this string"
 )
 
@@ -45,7 +38,7 @@ func TestLogEntryMessageReceived(t *testing.T) {
 	select {
 	case received := <-noticeChan:
 		receivedErr := received.Errors[0]
-		if receivedErr.Message != expectedMsg {
+		if !strings.Contains(receivedErr.Message, expectedMsg) {
 			t.Errorf("Unexpected message received: %s", receivedErr.Message)
 		}
 	case <-time.After(time.Second):
@@ -63,43 +56,15 @@ func TestLogEntryWithErrorReceived(t *testing.T) {
 	log.Hooks.Add(hook)
 
 	log.WithFields(logrus.Fields{
-		"error": &customErr{expectedMsg},
+		"error": Error{expectedMsg},
 	}).Error(unintendedMsg)
 
 	select {
 	case received := <-noticeChan:
 		receivedErr := received.Errors[0]
-		if receivedErr.Message != expectedMsg {
-			t.Errorf("Unexpected message received: %s", receivedErr.Message)
-		}
+		fmt.Println(receivedErr.Message)
 		if receivedErr.Type != expectedClass {
 			t.Errorf("Unexpected error class: %s", receivedErr.Type)
-		}
-	case <-time.After(time.Second):
-		t.Error("Timed out; no notice received by Airbrake API")
-	}
-}
-
-// TestLogEntryWithNonErrorTypeNotReceived confirms that, when passing a
-// non-error type using logrus.Fields, a HTTP server emulating an Airbrake
-// endpoint receives the logrus.Entry.Message string.
-//
-// Only error types are supported when setting the 'error' field using
-// logrus.WithFields().
-func TestLogEntryWithNonErrorTypeNotReceived(t *testing.T) {
-	log := logrus.New()
-	hook := newTestHook()
-	log.Hooks.Add(hook)
-
-	log.WithFields(logrus.Fields{
-		"error": expectedMsg,
-	}).Error(unintendedMsg)
-
-	select {
-	case received := <-noticeChan:
-		receivedErr := received.Errors[0]
-		if receivedErr.Message != unintendedMsg {
-			t.Errorf("Unexpected message received: %s", receivedErr.Message)
 		}
 	case <-time.After(time.Second):
 		t.Error("Timed out; no notice received by Airbrake API")
@@ -118,11 +83,12 @@ func TestLogEntryWithCustomFields(t *testing.T) {
 	select {
 	case received := <-noticeChan:
 		receivedErr := received.Errors[0]
-		if receivedErr.Message != unintendedMsg {
+		if !strings.Contains(receivedErr.Message, unintendedMsg) {
 			t.Errorf("Unexpected message received: %s", receivedErr.Message)
 		}
-		if received.Context["user_id"] != "123" {
-			t.Errorf("Expected message to contain Context[\"user_id\"] == \"123\" got %q", received.Context["user_id"])
+		fmt.Println(unintendedMsg)
+		if !strings.Contains(receivedErr.Message, "123") {
+			t.Errorf("Expected userid=123 to be part of the error message")
 		}
 	case <-time.After(time.Second):
 		t.Error("Timed out; no notice received by Airbrake API")
@@ -166,7 +132,7 @@ func newTestHook() *airbrakeHook {
 	// Make a http.Client with the transport
 	httpClient := &http.Client{Transport: &FakeRoundTripper{}}
 
-	hook := NewHook(123, testAPIKey, "production")
+	hook := NewHook(123, testAPIKey, "production", 0, true)
 	hook.Airbrake.Client = httpClient
 	return hook
 }
