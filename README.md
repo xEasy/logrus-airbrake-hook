@@ -19,8 +19,8 @@ The hook must be configured with:
 ```go
 import (
     "log/syslog"
-    "github.com/Invoiced/logrus"
-    "github.com/Invoiced/logrus-airbrake-hook" // the package is named
+    "github.com/Sirupsen/logrus"
+    "github.com/xEasy/logrus-airbrake-hook" // the package is named
     )
 
 func main() {
