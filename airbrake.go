@@ -60,7 +60,7 @@ func (hook *airbrakeHook) Fire(entry *logrus.Entry) error {
 	}
 	notice := hook.Airbrake.Notice(notifyErr, req, hook.StackTraceLevel)
 	for k, v := range entry.Data {
-		notice.Context[k] = fmt.Sprintf("%s", v)
+		notice.Env[k] = fmt.Sprintf("%s", v)
 	}
 
 	hook.Airbrake.SendNoticeAsync(notice)
